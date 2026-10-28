@@ -2,8 +2,8 @@ import { createClient } from '@supabase/supabase-js';
 import { SpaceListing, AuthUser } from '../types';
 import { Inquiry } from '../components/MyListingsModal';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://upckzykqjnugdyvlynvq.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_2mIgBkhS4iCoEZNxfQdidA_6W1q0b_N';
 
 export const isSupabaseConfigured = Boolean(
   supabaseUrl && 
