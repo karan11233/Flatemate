@@ -109,64 +109,59 @@ export const MyListingsModal: React.FC<MyListingsModalProps> = ({
         {/* Body */}
         <div className="p-6 space-y-6">
           
-          {/* User Account / Login Status */}
-          {currentUser ? (
+          {/* User Account / Phone Lookup */}
+          {(currentUser?.fullName || currentUser?.phone || currentPhone) ? (
             <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-bold text-sm">
-                  {currentUser.fullName ? currentUser.fullName[0].toUpperCase() : 'U'}
+                  {currentUser?.fullName ? currentUser.fullName[0].toUpperCase() : 'H'}
                 </div>
                 <div>
                   <div className="flex items-center gap-1.5">
-                    <h4 className="font-heading font-bold text-sm text-slate-900">{currentUser.fullName}</h4>
+                    <h4 className="font-heading font-bold text-sm text-slate-900">
+                      {currentUser?.fullName || 'Verified Ahmedabad Host'}
+                    </h4>
                     <span className="text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full flex items-center gap-1">
-                      <iconify-icon icon="lucide:check-circle"></iconify-icon> Verified Host
+                      <iconify-icon icon="lucide:check-circle"></iconify-icon> Connected
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    {currentUser.phone ? `+91 ${currentUser.phone}` : currentUser.email} • ID: {currentUser.id.slice(0, 8)}...
+                    {(currentUser?.phone || currentPhone) ? `+91 ${currentUser?.phone || currentPhone}` : 'Device Identity Active'}
                   </p>
                 </div>
               </div>
-              {onSignOut && (
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={onSignOut}
-                  className="text-xs font-bold text-rose-600 hover:text-rose-700 border border-rose-200 hover:bg-rose-50 px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
+                  onClick={() => {
+                    const newPhone = prompt('Enter 10-digit WhatsApp phone number to look up listings:', currentPhone || '');
+                    if (newPhone && newPhone.replace(/\D/g, '').length >= 10) {
+                      setCurrentPhone(newPhone.replace(/\D/g, '').slice(-10));
+                    }
+                  }}
+                  className="text-xs font-bold text-slate-700 hover:text-primary border border-slate-200 hover:bg-white px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
                 >
-                  Sign Out
+                  Switch Phone
                 </button>
-              )}
+                {onSignOut && (
+                  <button
+                    type="button"
+                    onClick={onSignOut}
+                    className="text-xs font-bold text-rose-600 hover:text-rose-700 border border-rose-200 hover:bg-rose-50 px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
             </div>
           ) : (
-            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5">
-                <iconify-icon icon="lucide:shield-alert" class="text-amber-600 text-xl shrink-0"></iconify-icon>
-                <div>
-                  <p className="text-xs font-bold text-amber-900">Not Logged In</p>
-                  <p className="text-xs text-amber-700">Log in to link your listings and view all seeker inquiries with one click.</p>
-                </div>
-              </div>
-              {onOpenAuth && (
-                <button
-                  type="button"
-                  onClick={onOpenAuth}
-                  className="shrink-0 px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary/90 transition-colors cursor-pointer"
-                >
-                  Log In / Sign Up
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Fallback Phone verification bar if not logged in */}
-          {!currentUser && (
             <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
               <form onSubmit={handlePhoneSubmit} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                 <div className="flex-1">
-                  <label className="text-xs font-semibold text-slate-500 block mb-1">
-                    Or Search Listings by Phone Number
+                  <label className="text-xs font-bold text-slate-700 block mb-1">
+                    Find Your Listings & Inquiries by WhatsApp Number
                   </label>
+                  <p className="text-[11px] text-slate-500 mb-2">Enter your 10-digit number to instantly pull up your active listings and seeker leads.</p>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">+91</span>
                     <input
@@ -175,15 +170,15 @@ export const MyListingsModal: React.FC<MyListingsModalProps> = ({
                       value={inputPhone}
                       onChange={(e) => setInputPhone(e.target.value)}
                       placeholder="98765 43210"
-                      className="w-full pl-10 pr-3 py-2 rounded-xl border border-input text-xs font-semibold bg-white outline-hidden focus:border-primary"
+                      className="w-full pl-11 pr-3 py-2 rounded-xl border border-input text-xs font-semibold bg-white outline-hidden focus:border-primary"
                     />
                   </div>
                 </div>
                 <button
                   type="submit"
-                  className="self-end sm:self-auto mt-auto px-5 py-2.5 bg-primary text-primary-foreground text-xs font-bold rounded-xl hover:bg-primary/90 transition-colors"
+                  className="self-end sm:self-auto mt-auto px-5 py-2.5 bg-primary text-primary-foreground text-xs font-bold rounded-xl hover:bg-primary/90 transition-colors cursor-pointer"
                 >
-                  Find
+                  Find My Listings
                 </button>
               </form>
             </div>

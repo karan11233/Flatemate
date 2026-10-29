@@ -243,7 +243,9 @@ export async function insertCloudSpace(space: SpaceListing): Promise<boolean> {
       status: space.status || 'active',
     };
 
-    if (space.userId) payload.user_id = space.userId;
+    const isUuid = (val?: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val || '');
+
+    if (isUuid(space.userId)) payload.user_id = space.userId;
     if (space.category) payload.listing_category = space.category;
     if (space.description) payload.description = space.description;
     if (space.amenities) payload.amenities = space.amenities;
@@ -251,26 +253,22 @@ export async function insertCloudSpace(space: SpaceListing): Promise<boolean> {
     const { error } = await supabase.from('spaces').insert([payload]);
 
     if (error) {
-      // Graceful fallback if custom columns are pending migration
-      if (error.message.includes('column') || error.message.includes('user_id')) {
-        console.warn('Retrying insert without optional columns:', error.message);
-        const { error: fallbackErr } = await supabase.from('spaces').insert([{
-          id: space.id,
-          type: space.type,
-          rent: space.rent,
-          raw_rent: space.rawRent,
-          location: space.location,
-          furnishing: space.furnishing,
-          occupancy: space.occupancy,
-          image: space.image,
-          host_name: space.hostName,
-          host_phone: space.hostPhone,
-          status: space.status || 'active',
-        }]);
-        return !fallbackErr;
-      }
-      console.error('Supabase space insert error:', error.message);
-      return false;
+      // Graceful fallback if custom columns or foreign keys/UUID mismatch
+      console.warn('Primary insert failed, attempting clean fallback:', error.message);
+      const { error: fallbackErr } = await supabase.from('spaces').insert([{
+        id: space.id,
+        type: space.type,
+        rent: space.rent,
+        raw_rent: space.rawRent,
+        location: space.location,
+        furnishing: space.furnishing,
+        occupancy: space.occupancy,
+        image: space.image,
+        host_name: space.hostName,
+        host_phone: space.hostPhone,
+        status: space.status || 'active',
+      }]);
+      return !fallbackErr;
     }
     return true;
   } catch (err) {
@@ -364,30 +362,29 @@ export async function insertCloudInquiry(inquiry: Inquiry): Promise<boolean> {
       status: inquiry.status,
     };
 
-    if (inquiry.hostId) payload.host_id = inquiry.hostId;
-    if (inquiry.seekerId) payload.seeker_id = inquiry.seekerId;
+    const isUuid = (val?: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val || '');
+
+    if (isUuid(inquiry.hostId)) payload.host_id = inquiry.hostId;
+    if (isUuid(inquiry.seekerId)) payload.seeker_id = inquiry.seekerId;
 
     const { error } = await supabase.from('inquiries').insert([payload]);
 
     if (error) {
-      if (error.message.includes('column') || error.message.includes('host_id')) {
-        const { error: fallbackErr } = await supabase.from('inquiries').insert([{
-          id: inquiry.id,
-          space_id: inquiry.spaceId,
-          space_title: inquiry.spaceTitle,
-          host_name: inquiry.hostName,
-          host_phone: inquiry.hostPhone,
-          seeker_name: inquiry.seekerName,
-          seeker_phone: inquiry.seekerPhone,
-          move_in_date: inquiry.moveInDate,
-          note: inquiry.note,
-          timestamp: inquiry.timestamp,
-          status: inquiry.status,
-        }]);
-        return !fallbackErr;
-      }
-      console.error('Supabase inquiry insert error:', error.message);
-      return false;
+      console.warn('Primary inquiry insert failed, attempting fallback:', error.message);
+      const { error: fallbackErr } = await supabase.from('inquiries').insert([{
+        id: inquiry.id,
+        space_id: inquiry.spaceId,
+        space_title: inquiry.spaceTitle,
+        host_name: inquiry.hostName,
+        host_phone: inquiry.hostPhone,
+        seeker_name: inquiry.seekerName,
+        seeker_phone: inquiry.seekerPhone,
+        move_in_date: inquiry.moveInDate,
+        note: inquiry.note,
+        timestamp: inquiry.timestamp,
+        status: inquiry.status,
+      }]);
+      return !fallbackErr;
     }
     return true;
   } catch (err) {
