@@ -200,13 +200,14 @@ export function App() {
   };
 
   // Real Spaces (starts empty or loads from Supabase / clean localStorage)
+  const DUMMY_IDS = ['space-1', 'space-2', 'space-3', 'space-4', 'space-5', 'space-6'];
   const [spaces, setSpaces] = useState<SpaceListing[]>(() => {
     try {
       const saved = localStorage.getItem('flatemate_spaces_data');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          return parsed.filter((s: SpaceListing) => !s.id.startsWith('space-1') && !s.id.startsWith('space-2') && !s.id.startsWith('space-3') && !s.id.startsWith('space-4') && !s.id.startsWith('space-5') && !s.id.startsWith('space-6'));
+          return parsed.filter((s: SpaceListing) => !DUMMY_IDS.includes(s.id));
         }
       }
       return [];
@@ -246,7 +247,7 @@ export function App() {
       
       const cloudSpaces = await getCloudSpaces();
       if (cloudSpaces) {
-        const realCloud = cloudSpaces.filter((s) => !s.id.startsWith('space-1') && !s.id.startsWith('space-2') && !s.id.startsWith('space-3') && !s.id.startsWith('space-4') && !s.id.startsWith('space-5') && !s.id.startsWith('space-6'));
+        const realCloud = cloudSpaces.filter((s) => !DUMMY_IDS.includes(s.id));
         setSpaces(realCloud);
       }
 

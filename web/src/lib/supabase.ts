@@ -181,7 +181,7 @@ export async function getCloudSpaces(): Promise<SpaceListing[] | null> {
       category: row.listing_category || 'fresh',
       type: row.type,
       rent: row.rent,
-      rawRent: row.raw_rent,
+      rawRent: Number(row.raw_rent || (row.rent ? String(row.rent).replace(/\D/g, '') : 0)),
       location: row.location,
       furnishing: row.furnishing,
       occupancy: row.occupancy,
