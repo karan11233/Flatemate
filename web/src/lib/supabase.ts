@@ -195,7 +195,13 @@ export async function getCloudSpaces(): Promise<SpaceListing[] | null> {
     return (data || []).map((row: any) => ({
       id: row.id,
       userId: row.user_id,
-      category: row.listing_category || 'fresh',
+      category: row.listing_category || (
+        (row.type?.toLowerCase().includes('seeking') || row.type?.toLowerCase().includes('looking for') || row.type?.toLowerCase().includes('seeker'))
+          ? 'seeker'
+          : (row.type?.toLowerCase().includes('replacement') || row.occupancy?.toLowerCase().includes('needed') || row.type?.toLowerCase().includes('shared'))
+          ? 'replacement'
+          : 'fresh'
+      ),
       type: row.type,
       rent: row.rent,
       rawRent: Number(row.raw_rent || (row.rent ? String(row.rent).replace(/\D/g, '') : 0)),
