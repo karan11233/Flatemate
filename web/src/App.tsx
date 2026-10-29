@@ -580,49 +580,82 @@ export function App() {
         
         {/* HERO SECTION (#home) */}
         <section id="home" className="bg-secondary">
-          <div className="mx-auto grid w-full max-w-7xl grid-cols-1 items-center gap-12 px-6 py-16 lg:grid-cols-12 lg:px-10 lg:py-24">
+          <div className="mx-auto grid w-full max-w-7xl grid-cols-1 items-center gap-12 px-6 py-14 lg:grid-cols-12 lg:px-10 lg:py-20">
             
             <div className="lg:col-span-6">
-              <p className="mb-5 flex items-center gap-2 text-xs font-bold tracking-widest text-primary">
-                <span className="h-2 w-2 rounded-full bg-tertiary"></span>
-                MAKING SHARED LIVING SIMPLE
+              <p className="mb-4 flex items-center gap-2 text-xs font-bold tracking-widest text-primary">
+                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                AHMEDABAD'S DIRECT FLAT & FLATMATES NETWORK
               </p>
               
-              <h1 className="max-w-xl text-balance font-heading text-5xl font-bold leading-tight tracking-tight lg:text-6xl">
+              <h1 className="max-w-xl text-balance font-heading text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight tracking-tight text-slate-900">
                 Find Your Space. Find <span className="text-primary">Your People.</span>
               </h1>
               
-              <p className="mt-6 max-w-xl text-pretty text-lg leading-8 text-muted-foreground">
-                Discover flats, shared rooms, and compatible flatmates in Ahmedabad. Skip the endless WhatsApp searches and make finding your next home easier.
+              <p className="mt-4 max-w-xl text-pretty text-base sm:text-lg leading-7 text-muted-foreground">
+                Browse verified vacant flats, room replacements, and roommate requirements in Ahmedabad. Connect directly on WhatsApp with zero brokerage.
               </p>
               
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              {/* Action Buttons: Instant access to both finding and posting requirements */}
+              <div className="mt-7 flex flex-wrap gap-2.5 sm:gap-3">
                 <a 
-                  href="#search" 
-                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-primary px-6 text-sm font-bold text-primary-foreground shadow-md hover:bg-primary/90 transition-colors"
+                  href="#spaces" 
+                  onClick={() => setSelectedCategoryTab('all')}
+                  className="inline-flex min-h-11 sm:min-h-12 items-center justify-center gap-2 rounded-xl bg-primary px-4 sm:px-5 text-xs sm:text-sm font-bold text-white shadow-md hover:bg-primary/90 transition-all cursor-pointer"
                 >
-                  <iconify-icon icon="lucide:search" class="text-lg"></iconify-icon>
-                  Find a Flat or Flatmate
+                  <iconify-icon icon="lucide:search" class="text-base"></iconify-icon>
+                  <span>Explore Spaces</span>
+                </a>
+                
+                <a 
+                  href="#spaces" 
+                  onClick={() => setSelectedCategoryTab('seeker')}
+                  className="inline-flex min-h-11 sm:min-h-12 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 sm:px-5 text-xs sm:text-sm font-bold text-white shadow-md hover:bg-emerald-700 transition-all cursor-pointer"
+                >
+                  <iconify-icon icon="lucide:user-search" class="text-base"></iconify-icon>
+                  <span>People Seeking Flats</span>
+                </a>
+
+                <a 
+                  href="#list-space" 
+                  onClick={() => setListingTab('seeker')}
+                  className="inline-flex min-h-11 sm:min-h-12 items-center justify-center gap-2 rounded-xl border-2 border-emerald-600/40 bg-emerald-50 text-emerald-800 px-4 sm:px-5 text-xs sm:text-sm font-bold shadow-xs hover:bg-emerald-100 transition-all cursor-pointer"
+                >
+                  <iconify-icon icon="lucide:plus-circle" class="text-base text-emerald-600"></iconify-icon>
+                  <span>Post Flat Requirement</span>
                 </a>
                 
                 <a 
                   href="#list-space" 
-                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-border bg-card px-6 text-sm font-bold shadow-sm hover:bg-slate-50 transition-colors"
+                  onClick={() => setListingTab('fresh')}
+                  className="inline-flex min-h-11 sm:min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 sm:px-5 text-xs sm:text-sm font-bold text-slate-700 shadow-xs hover:bg-slate-50 transition-all cursor-pointer"
                 >
-                  <iconify-icon icon="lucide:plus" class="text-lg text-primary"></iconify-icon>
-                  Post a Free Listing
+                  <iconify-icon icon="lucide:building-2" class="text-base text-primary"></iconify-icon>
+                  <span>List a Space</span>
                 </a>
               </div>
               
-              <p className="mt-5 flex items-center gap-2 text-sm text-muted-foreground">
-                <iconify-icon icon="lucide:circle-check" class="text-base text-tertiary"></iconify-icon>
-                Starting in Ahmedabad <span>•</span> Free to explore <span>•</span> Simple to connect
-              </p>
+              <div className="mt-6 flex flex-wrap items-center gap-3 text-xs font-semibold text-slate-600">
+                <span className="flex items-center gap-1.5">
+                  <iconify-icon icon="lucide:check-circle-2" class="text-emerald-600 text-sm"></iconify-icon>
+                  100% Free Forever
+                </span>
+                <span>•</span>
+                <span className="flex items-center gap-1.5">
+                  <iconify-icon icon="lucide:check-circle-2" class="text-emerald-600 text-sm"></iconify-icon>
+                  Zero Brokerage
+                </span>
+                <span>•</span>
+                <span className="flex items-center gap-1.5">
+                  <iconify-icon icon="lucide:check-circle-2" class="text-emerald-600 text-sm"></iconify-icon>
+                  Direct WhatsApp Connect
+                </span>
+              </div>
             </div>
 
-            {/* Hero Image */}
+            {/* Hero Image with Floating Quick-Access Cards */}
             <div className="relative lg:col-span-6">
-              <div className="overflow-hidden rounded-2xl shadow-lg border border-border">
+              <div className="overflow-hidden rounded-3xl shadow-xl border border-slate-200 relative group">
                 <img 
                   src="/assets/hero.png" 
                   alt="Flatmates in a shared apartment in Ahmedabad" 
@@ -630,6 +663,28 @@ export function App() {
                   width="1536" 
                   height="1024" 
                 />
+
+                {/* Floating Badge 1: Instant Seeker Mode */}
+                <a
+                  href="#spaces"
+                  onClick={() => setSelectedCategoryTab('seeker')}
+                  className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-md p-3 rounded-2xl shadow-lg border border-emerald-100 flex items-center gap-3 cursor-pointer hover:scale-102 transition-transform"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                    <iconify-icon icon="lucide:user-search" class="text-xl"></iconify-icon>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black uppercase text-emerald-700 tracking-wider">Direct Connect</span>
+                    <p className="text-xs font-bold text-slate-900">People Seeking Flats</p>
+                    <p className="text-[10px] text-slate-500">Reach flat seekers on WhatsApp</p>
+                  </div>
+                </a>
+
+                {/* Floating Badge 2: Zero Brokerage */}
+                <div className="absolute top-4 right-4 bg-slate-900/80 backdrop-blur-md text-white px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-md">
+                  <iconify-icon icon="lucide:shield-check" class="text-emerald-400"></iconify-icon>
+                  <span>100% Zero Brokerage</span>
+                </div>
               </div>
             </div>
 
@@ -647,27 +702,27 @@ export function App() {
               What Brings You to Flatemate?
             </h2>
             <p className="mt-2 text-xs sm:text-sm text-slate-600 leading-relaxed">
-              Whether you need an entire flat, want to join a roommate in an existing home, or have space to rent out.
+              Whether you need an entire flat, want to join a roommate in an existing home, or are looking for flatmates.
             </p>
           </div>
 
-          <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-3">
+          <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {/* PATHWAY 1: SEEKING FULL FLAT */}
-            <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group">
+            <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group">
               <div>
-                <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600 mb-4 group-hover:scale-105 transition-transform">
-                  <iconify-icon icon="lucide:building-2" class="text-2xl"></iconify-icon>
+                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600 mb-3 group-hover:scale-105 transition-transform">
+                  <iconify-icon icon="lucide:building-2" class="text-xl"></iconify-icon>
                 </span>
-                <span className="text-[11px] font-bold text-blue-600 uppercase tracking-wider">Seeker • Full Property</span>
-                <h3 className="mt-1 font-heading text-lg font-bold text-slate-900">Rent a Full Vacant Flat</h3>
+                <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">Seeker • Full Property</span>
+                <h3 className="mt-1 font-heading text-base font-bold text-slate-900">Rent Full Vacant Flat</h3>
                 <p className="mt-2 text-xs text-slate-600 leading-relaxed">
-                  For 2–3 friends, colleagues, or families looking to rent an entire 1BHK, 2BHK, 3BHK or villa together.
+                  For friends, colleagues, or families looking to rent an entire 1BHK, 2BHK, 3BHK or villa.
                 </p>
               </div>
               <a 
                 href="#spaces" 
                 onClick={() => setSelectedCategoryTab('fresh')}
-                className="mt-6 inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-primary group-hover:underline cursor-pointer"
+                className="mt-5 inline-flex items-center gap-1.5 text-xs font-bold text-primary group-hover:underline cursor-pointer"
               >
                 <span>Browse Full Flats</span>
                 <iconify-icon icon="lucide:arrow-right"></iconify-icon>
@@ -675,44 +730,67 @@ export function App() {
             </article>
 
             {/* PATHWAY 2: JOINING OCCUPIED FLAT (REPLACEMENT) */}
-            <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group">
+            <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group">
               <div>
-                <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-purple-50 text-purple-600 mb-4 group-hover:scale-105 transition-transform">
-                  <iconify-icon icon="lucide:users" class="text-2xl"></iconify-icon>
+                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-purple-50 text-purple-600 mb-3 group-hover:scale-105 transition-transform">
+                  <iconify-icon icon="lucide:users" class="text-xl"></iconify-icon>
                 </span>
-                <span className="text-[11px] font-bold text-purple-600 uppercase tracking-wider">Seeker • Single Room / Bed</span>
-                <h3 className="mt-1 font-heading text-lg font-bold text-slate-900">Join an Occupied Flat</h3>
+                <span className="text-[10px] font-bold text-purple-600 uppercase tracking-wider">Seeker • Single Room / Bed</span>
+                <h3 className="mt-1 font-heading text-base font-bold text-slate-900">Join an Occupied Flat</h3>
                 <p className="mt-2 text-xs text-slate-600 leading-relaxed">
-                  Looking for a single room or shared spot in a flat where 1–2 flatmates already live and need a replacement.
+                  Looking for a single room or shared spot where flatmates already live and need a replacement.
                 </p>
               </div>
               <a 
                 href="#spaces" 
                 onClick={() => setSelectedCategoryTab('replacement')}
-                className="mt-6 inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-primary group-hover:underline cursor-pointer"
+                className="mt-5 inline-flex items-center gap-1.5 text-xs font-bold text-primary group-hover:underline cursor-pointer"
               >
-                <span>Browse Flatmate Openings</span>
+                <span>Browse Flat Openings</span>
                 <iconify-icon icon="lucide:arrow-right"></iconify-icon>
               </a>
             </article>
 
-            {/* PATHWAY 3: HOST / LIST A SPACE */}
-            <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group">
+            {/* PATHWAY 3: BROWSE PEOPLE SEEKING FLATS */}
+            <article className="rounded-2xl border border-emerald-200 bg-emerald-50/40 p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group">
               <div>
-                <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 mb-4 group-hover:scale-105 transition-transform">
-                  <iconify-icon icon="lucide:house-plus" class="text-2xl"></iconify-icon>
+                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 mb-3 group-hover:scale-105 transition-transform">
+                  <iconify-icon icon="lucide:user-search" class="text-xl"></iconify-icon>
                 </span>
-                <span className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider">Host / Resident • 0% Brokerage</span>
-                <h3 className="mt-1 font-heading text-lg font-bold text-slate-900">List Your Space Free</h3>
+                <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Hosts & Roommates</span>
+                <h3 className="mt-1 font-heading text-base font-bold text-slate-900">People Seeking Flats</h3>
                 <p className="mt-2 text-xs text-slate-600 leading-relaxed">
-                  Owner with a vacant flat or resident needing 1–2 flatmates? Post it in 2 minutes and get direct seeker inquiries.
+                  Have an empty room or flat? Browse verified seekers and reach out to them directly on WhatsApp.
+                </p>
+              </div>
+              <a 
+                href="#spaces" 
+                onClick={() => setSelectedCategoryTab('seeker')}
+                className="mt-5 inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 group-hover:underline cursor-pointer"
+              >
+                <span>Browse Flat Seekers</span>
+                <iconify-icon icon="lucide:arrow-right"></iconify-icon>
+              </a>
+            </article>
+
+            {/* PATHWAY 4: POST YOUR REQUIREMENT OR SPACE */}
+            <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group">
+              <div>
+                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 text-amber-600 mb-3 group-hover:scale-105 transition-transform">
+                  <iconify-icon icon="lucide:plus-circle" class="text-xl"></iconify-icon>
+                </span>
+                <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wider">Free Post • 0% Brokerage</span>
+                <h3 className="mt-1 font-heading text-base font-bold text-slate-900">Post Requirement / Space</h3>
+                <p className="mt-2 text-xs text-slate-600 leading-relaxed">
+                  Post what you're looking for or list your vacant apartment in under 2 minutes. 100% free.
                 </p>
               </div>
               <a 
                 href="#list-space" 
-                className="mt-6 inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-primary group-hover:underline cursor-pointer"
+                onClick={() => setListingTab('seeker')}
+                className="mt-5 inline-flex items-center gap-1.5 text-xs font-bold text-primary group-hover:underline cursor-pointer"
               >
-                <span>Create Free Listing</span>
+                <span>Post for Free</span>
                 <iconify-icon icon="lucide:arrow-right"></iconify-icon>
               </a>
             </article>
