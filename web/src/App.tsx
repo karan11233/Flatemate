@@ -1483,8 +1483,8 @@ export function App() {
                     {/* SECTION 1: PROPERTY INFORMATION */}
                     <div>
                       <div className="text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                        <iconify-icon icon="lucide:home" class="text-primary"></iconify-icon>
-                        <span>Step 1: Property Information</span>
+                        <iconify-icon icon={listingTab === 'seeker' ? "lucide:user-search" : "lucide:home"} class={listingTab === 'seeker' ? "text-emerald-600" : "text-primary"}></iconify-icon>
+                        <span>{listingTab === 'seeker' ? 'Step 1: Your Requirement' : 'Step 1: Property Information'}</span>
                       </div>
 
                       {/* FRESH FLAT FIELDS (Single column on mobile, 2 cols on desktop) */}
@@ -2004,139 +2004,143 @@ export function App() {
                       </div>
                     </div>
 
-                    {/* SECTION 3: AMENITIES & HIGHLIGHTS */}
-                    <div className="pt-4 border-t border-slate-100">
-                      <div className="flex items-center justify-between mb-2.5">
-                        <div className="text-xs font-extrabold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                          <iconify-icon icon="lucide:check-square" class="text-primary"></iconify-icon>
-                          <span>Step 3: Amenities & Highlights</span>
-                        </div>
-                        <span className="text-[11px] text-slate-500 font-semibold">{selectedAmenities.length} selected</span>
-                      </div>
-
-                      {/* Pill options */}
-                      <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3">
-                        {[
-                          'AC',
-                          'WiFi',
-                          'Attached Bath',
-                          'Balcony',
-                          'Cook / Maid',
-                          'Washing Machine',
-                          'Fridge',
-                          'Car Parking',
-                          'Power Backup',
-                          'Gym',
-                        ].map((amenity) => {
-                          const isSel = selectedAmenities.includes(amenity);
-                          return (
-                            <button
-                              type="button"
-                              key={amenity}
-                              onClick={() => toggleAmenity(amenity)}
-                              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
-                                isSel 
-                                  ? 'bg-primary text-white shadow-2xs' 
-                                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200'
-                              }`}
-                            >
-                              {isSel && <iconify-icon icon="lucide:check" class="text-xs"></iconify-icon>}
-                              <span>{amenity}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-
-                      {/* Custom user amenity input */}
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          placeholder="Type custom amenity (e.g. Lift, RO Water)..."
-                          value={customAmenityInput}
-                          onChange={(e) => setCustomAmenityInput(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              handleAddCustomAmenity();
-                            }
-                          }}
-                          className="flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-hidden"
-                        />
-                        <button
-                          type="button"
-                          onClick={handleAddCustomAmenity}
-                          className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 cursor-pointer transition-colors"
-                        >
-                          + Add
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* SECTION 4: DESCRIPTION & PHOTOS */}
-                    <div className="pt-4 border-t border-slate-100 space-y-4">
-                      <div className="text-xs font-extrabold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                        <iconify-icon icon="lucide:file-text" class="text-primary"></iconify-icon>
-                        <span>Step 4: Details & Photos</span>
-                      </div>
-
-                      {/* Description textarea */}
-                      <div>
-                        <label className="block text-xs font-bold text-slate-800 mb-1">
-                          About the Flat & House Rules (Optional)
-                        </label>
-                        <textarea
-                          rows={3}
-                          value={spaceDescription}
-                          onChange={(e) => setSpaceDescription(e.target.value)}
-                          placeholder="Describe society name, gate timings, maintenance inclusions, distance to bus/metro, house vibe..."
-                          className="w-full p-3 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-hidden resize-none leading-relaxed"
-                        />
-                      </div>
-
-                      {/* Photo Uploading */}
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                            <iconify-icon icon="lucide:camera" class="text-primary text-sm"></iconify-icon>
-                            <span>Upload Flat Photos (Optional)</span>
-                          </label>
-                          <span className="text-[11px] text-slate-500 font-medium">Up to 4 photos</span>
-                        </div>
-
-                        {/* Photo Previews */}
-                        {uploadedPhotos.length > 0 && (
-                          <div className="flex gap-2.5 mb-3 overflow-x-auto pb-1">
-                            {uploadedPhotos.map((photo, idx) => (
-                              <div key={idx} className="relative w-16 h-16 rounded-xl overflow-hidden border border-slate-200 shrink-0 shadow-2xs group">
-                                <img src={photo} alt="Upload preview" className="w-full h-full object-cover" />
-                                <button
-                                  type="button"
-                                  onClick={() => setUploadedPhotos((prev) => prev.filter((_, i) => i !== idx))}
-                                  className="absolute top-1 right-1 bg-black/75 hover:bg-rose-600 text-white rounded-full p-1 text-xs transition-colors cursor-pointer"
-                                  title="Remove photo"
-                                >
-                                  <iconify-icon icon="lucide:x"></iconify-icon>
-                                </button>
-                              </div>
-                            ))}
+                    {/* SECTION 3: AMENITIES & HIGHLIGHTS (Only for Flat & Replacement listings) */}
+                    {listingTab !== 'seeker' && (
+                      <div className="pt-4 border-t border-slate-100">
+                        <div className="flex items-center justify-between mb-2.5">
+                          <div className="text-xs font-extrabold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <iconify-icon icon="lucide:check-square" class="text-primary"></iconify-icon>
+                            <span>Step 3: Amenities & Highlights</span>
                           </div>
-                        )}
+                          <span className="text-[11px] text-slate-500 font-semibold">{selectedAmenities.length} selected</span>
+                        </div>
 
-                        <label className="rounded-xl border-2 border-dashed border-primary/30 hover:border-primary p-3.5 bg-primary/5 hover:bg-primary/10 transition-colors flex items-center justify-center gap-2 text-xs sm:text-sm font-bold text-primary cursor-pointer select-none">
-                          <iconify-icon icon="lucide:image-plus" class="text-lg"></iconify-icon>
-                          <span>
-                            {uploadedPhotos.length > 0 ? '+ Add More Photos' : 'Choose Photos from Phone or Camera'}
-                          </span>
+                        {/* Pill options */}
+                        <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3">
+                          {[
+                            'AC',
+                            'WiFi',
+                            'Attached Bath',
+                            'Balcony',
+                            'Cook / Maid',
+                            'Washing Machine',
+                            'Fridge',
+                            'Car Parking',
+                            'Power Backup',
+                            'Gym',
+                          ].map((amenity) => {
+                            const isSel = selectedAmenities.includes(amenity);
+                            return (
+                              <button
+                                type="button"
+                                key={amenity}
+                                onClick={() => toggleAmenity(amenity)}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                                  isSel 
+                                    ? 'bg-primary text-white shadow-2xs' 
+                                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200'
+                                }`}
+                              >
+                                {isSel && <iconify-icon icon="lucide:check" class="text-xs"></iconify-icon>}
+                                <span>{amenity}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* Custom user amenity input */}
+                        <div className="flex gap-2">
                           <input
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            onChange={handlePhotoSelect}
-                            className="hidden"
+                            type="text"
+                            placeholder="Type custom amenity (e.g. Lift, RO Water)..."
+                            value={customAmenityInput}
+                            onChange={(e) => setCustomAmenityInput(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleAddCustomAmenity();
+                              }
+                            }}
+                            className="flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-hidden"
                           />
-                        </label>
+                          <button
+                            type="button"
+                            onClick={handleAddCustomAmenity}
+                            className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 cursor-pointer transition-colors"
+                          >
+                            + Add
+                          </button>
+                        </div>
                       </div>
-                    </div>
+                    )}
+
+                    {/* SECTION 4: DESCRIPTION & PHOTOS (Only for Flat & Replacement listings) */}
+                    {listingTab !== 'seeker' && (
+                      <div className="pt-4 border-t border-slate-100 space-y-4">
+                        <div className="text-xs font-extrabold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                          <iconify-icon icon="lucide:file-text" class="text-primary"></iconify-icon>
+                          <span>Step 4: Details & Photos</span>
+                        </div>
+
+                        {/* Description textarea */}
+                        <div>
+                          <label className="block text-xs font-bold text-slate-800 mb-1">
+                            About the Flat & House Rules (Optional)
+                          </label>
+                          <textarea
+                            rows={3}
+                            value={spaceDescription}
+                            onChange={(e) => setSpaceDescription(e.target.value)}
+                            placeholder="Describe society name, gate timings, maintenance inclusions, distance to bus/metro, house vibe..."
+                            className="w-full p-3 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-hidden resize-none leading-relaxed"
+                          />
+                        </div>
+
+                        {/* Photo Uploading */}
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                              <iconify-icon icon="lucide:camera" class="text-primary text-sm"></iconify-icon>
+                              <span>Upload Flat Photos (Optional)</span>
+                            </label>
+                            <span className="text-[11px] text-slate-500 font-medium">Up to 4 photos</span>
+                          </div>
+
+                          {/* Photo Previews */}
+                          {uploadedPhotos.length > 0 && (
+                            <div className="flex gap-2.5 mb-3 overflow-x-auto pb-1">
+                              {uploadedPhotos.map((photo, idx) => (
+                                <div key={idx} className="relative w-16 h-16 rounded-xl overflow-hidden border border-slate-200 shrink-0 shadow-2xs group">
+                                  <img src={photo} alt="Upload preview" className="w-full h-full object-cover" />
+                                  <button
+                                    type="button"
+                                    onClick={() => setUploadedPhotos((prev) => prev.filter((_, i) => i !== idx))}
+                                    className="absolute top-1 right-1 bg-black/75 hover:bg-rose-600 text-white rounded-full p-1 text-xs transition-colors cursor-pointer"
+                                    title="Remove photo"
+                                  >
+                                    <iconify-icon icon="lucide:x"></iconify-icon>
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          <label className="rounded-xl border-2 border-dashed border-primary/30 hover:border-primary p-3.5 bg-primary/5 hover:bg-primary/10 transition-colors flex items-center justify-center gap-2 text-xs sm:text-sm font-bold text-primary cursor-pointer select-none">
+                            <iconify-icon icon="lucide:image-plus" class="text-lg"></iconify-icon>
+                            <span>
+                              {uploadedPhotos.length > 0 ? '+ Add More Photos' : 'Choose Photos from Phone or Camera'}
+                            </span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              multiple
+                              onChange={handlePhotoSelect}
+                              className="hidden"
+                            />
+                          </label>
+                        </div>
+                      </div>
+                    )}
 
                     {/* SUBMIT BUTTON */}
                     <div className="pt-3">
