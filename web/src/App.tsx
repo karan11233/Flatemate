@@ -200,15 +200,12 @@ export function App() {
   };
 
   // Real Spaces (starts empty or loads from Supabase / clean localStorage)
-  const DUMMY_IDS = ['space-1', 'space-2', 'space-3', 'space-4', 'space-5', 'space-6'];
   const [spaces, setSpaces] = useState<SpaceListing[]>(() => {
     try {
       const saved = localStorage.getItem('flatemate_spaces_data');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          return parsed.filter((s: SpaceListing) => !DUMMY_IDS.includes(s.id));
-        }
+        if (Array.isArray(parsed)) return parsed;
       }
       return [];
     } catch {
@@ -226,9 +223,7 @@ export function App() {
       const saved = localStorage.getItem('flatemate_inquiries_data');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          return parsed.filter((inq: Inquiry) => !inq.id.startsWith('inq-demo-'));
-        }
+        if (Array.isArray(parsed)) return parsed;
       }
       return [];
     } catch {
@@ -240,21 +235,19 @@ export function App() {
     localStorage.setItem('flatemate_inquiries_data', JSON.stringify(inquiries));
   }, [inquiries]);
 
-  // Sync Cloud Data from Supabase on Load
+  // Sync Cloud Data from Supabase on Load (Direct database source of truth)
   useEffect(() => {
     async function initCloudSync() {
       if (!isSupabaseConfigured) return;
       
       const cloudSpaces = await getCloudSpaces();
       if (cloudSpaces) {
-        const realCloud = cloudSpaces.filter((s) => !DUMMY_IDS.includes(s.id));
-        setSpaces(realCloud);
+        setSpaces(cloudSpaces);
       }
 
       const cloudInquiries = await getCloudInquiries();
       if (cloudInquiries) {
-        const realInquiries = cloudInquiries.filter((inq) => !inq.id.startsWith('inq-demo-'));
-        setInquiries(realInquiries);
+        setInquiries(cloudInquiries);
       }
     }
     initCloudSync();
