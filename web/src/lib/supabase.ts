@@ -17,6 +17,23 @@ export const supabase = isSupabaseConfigured
   : null;
 
 /**
+ * Get or create a persistent anonymous device user ID
+ * Guarantees every user has a unique ID without requiring passwords or emails.
+ */
+export function getOrCreateDeviceUserId(): string {
+  try {
+    let id = localStorage.getItem('flatemate_device_user_id');
+    if (!id) {
+      id = 'usr_' + Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
+      localStorage.setItem('flatemate_device_user_id', id);
+    }
+    return id;
+  } catch {
+    return 'usr_' + Date.now().toString(36);
+  }
+}
+
+/**
  * Helper to normalize login identifier (email or 10-digit Indian mobile)
  */
 export function normalizeAuthEmail(identifier: string): string {

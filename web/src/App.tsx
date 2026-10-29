@@ -10,6 +10,7 @@ import {
   supabase,
   getCurrentUser,
   signOutUser,
+  getOrCreateDeviceUserId,
   getCloudSpaces,
   insertCloudSpace,
   updateCloudSpaceStatus,
@@ -25,8 +26,21 @@ import {
 } from './lib/moderation';
 
 export function App() {
-  // Auth State
-  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  // Seamless Device Auth State (Frictionless guest identity)
+  const [currentUser, setCurrentUser] = useState<AuthUser>(() => {
+    try {
+      const saved = localStorage.getItem('flatemate_user');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    const deviceId = getOrCreateDeviceUserId();
+    const savedName = localStorage.getItem('flatemate_user_name') || '';
+    const savedPhone = localStorage.getItem('flatemate_user_phone') || '';
+    return {
+      id: deviceId,
+      fullName: savedName || '',
+      phone: savedPhone,
+    };
+  });
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authPromptMessage, setAuthPromptMessage] = useState('');
   const [onAuthSuccessCallback, setOnAuthSuccessCallback] = useState<(() => void) | null>(null);
@@ -34,7 +48,7 @@ export function App() {
   // Filter States
   const [selectedLocality, setSelectedLocality] = useState<string>('All');
   const [selectedBudget, setSelectedBudget] = useState<string>('Any');
-  const [selectedCategoryTab, setSelectedCategoryTab] = useState<'all' | 'fresh' | 'replacement'>('all');
+  const [selectedCategoryTab, setSelectedCategoryTab] = useState<'all' | 'fresh' | 'replacement' | 'seeker'>('all');
   const [searchLookingFor, setSearchLookingFor] = useState<string>('All');
   const [searchLocation, setSearchLocation] = useState<string>('All');
   const [searchBudget, setSearchBudget] = useState<string>('All');
@@ -48,14 +62,14 @@ export function App() {
   const [interestDate, setInterestDate] = useState('');
 
   // List Space Form Inputs & Tabs
-  const [listingTab, setListingTab] = useState<'fresh' | 'replacement'>('fresh');
+  const [listingTab, setListingTab] = useState<'fresh' | 'replacement' | 'seeker'>('fresh');
   const [spaceTitle, setSpaceTitle] = useState('');
   const [spaceLocation, setSpaceLocation] = useState('');
   const [spaceRent, setSpaceRent] = useState('');
   const [spaceAvailable, setSpaceAvailable] = useState('');
   const [spaceFurnishing, setSpaceFurnishing] = useState('Fully Furnished');
-  const [hostName, setHostName] = useState('');
-  const [hostPhone, setHostPhone] = useState('');
+  const [hostName, setHostName] = useState(() => localStorage.getItem('flatemate_user_name') || '');
+  const [hostPhone, setHostPhone] = useState(() => localStorage.getItem('flatemate_user_phone') || '');
 
   // Tab 1: Fresh Flat specific
   const [freshBhk, setFreshBhk] = useState('2BHK Flat');
@@ -66,6 +80,13 @@ export function App() {
   const [replacementBhk, setReplacementBhk] = useState('3BHK Flat');
   const [replacementRoomType, setReplacementRoomType] = useState('Private Room with Attached Bath');
   const [flatmateHabitPref, setFlatmateHabitPref] = useState('Working Professionals / Any');
+
+  // Tab 3: Seeker Requirement specific (Looking for Flat/Roommate)
+  const [seekerLookingFor, setSeekerLookingFor] = useState('Private Room in Shared Flat');
+  const [seekerOccupancy, setSeekerOccupancy] = useState('1 Male Bachelor');
+  const [seekerMoveIn, setSeekerMoveIn] = useState('Immediate / Flexible');
+  const [seekerProfession, setSeekerProfession] = useState('IT / Working Professional');
+  const [seekerDiet, setSeekerDiet] = useState('Vegetarian');
 
   // Custom Description & Highlights/Amenities
   const [spaceDescription, setSpaceDescription] = useState('');
@@ -139,7 +160,14 @@ export function App() {
           }
           if (u.fullName) setHostName(u.fullName);
         } else {
-          setCurrentUser(null);
+          const deviceId = getOrCreateDeviceUserId();
+          const savedName = localStorage.getItem('flatemate_user_name') || '';
+          const savedPhone = localStorage.getItem('flatemate_user_phone') || '';
+          setCurrentUser({
+            id: deviceId,
+            fullName: savedName,
+            phone: savedPhone,
+          });
         }
       });
       return () => subscription.unsubscribe();
@@ -148,7 +176,17 @@ export function App() {
 
   const handleSignOut = async () => {
     await signOutUser();
-    setCurrentUser(null);
+    localStorage.removeItem('flatemate_user');
+    localStorage.removeItem('flatemate_user_name');
+    localStorage.removeItem('flatemate_user_phone');
+    const deviceId = getOrCreateDeviceUserId();
+    setCurrentUser({
+      id: deviceId,
+      fullName: '',
+      phone: '',
+    });
+    setHostName('');
+    setHostPhone('');
   };
 
   // Saved Listings
@@ -262,6 +300,8 @@ export function App() {
     } else if (selectedCategoryTab === 'replacement') {
       if (item.category && item.category !== 'replacement') return false;
       if (!item.category && !item.type.toLowerCase().includes('shared') && !item.type.toLowerCase().includes('room')) return false;
+    } else if (selectedCategoryTab === 'seeker') {
+      if (item.category !== 'seeker') return false;
     }
 
     if (selectedLocality !== 'All' && !item.location.toLowerCase().includes(selectedLocality.toLowerCase())) {
@@ -307,6 +347,8 @@ export function App() {
     if (isSupabaseConfigured) {
       insertCloudInquiry(newInquiry);
     }
+    localStorage.setItem('flatemate_user_name', data.seekerName.trim());
+    localStorage.setItem('flatemate_user_phone', data.seekerPhone.trim());
     setLastSubmittedSpace(targetSpace);
     setInterestName(data.seekerName);
     setInterestPhone(data.seekerPhone);
@@ -315,19 +357,12 @@ export function App() {
     setIsInterestSuccessOpen(true);
   };
 
-  // Handle Host "Post Listing" Submission (Fresh Flat or Replacement)
+  // Handle Host & Seeker Submission (Fresh Flat, Replacement, or Seeker Requirement)
   const handleListSpaceSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Check Login Requirement
-    if (!currentUser) {
-      setAuthPromptMessage('Please log in or create an account to publish your listing and manage inquiries.');
-      setIsAuthModalOpen(true);
-      return;
-    }
-
     if (!spaceRent || !spaceLocation || !hostName || !hostPhone) {
-      alert('Please fill out the rent, location, your name, and WhatsApp number.');
+      alert('Please fill out the rent/budget, location, your name, and WhatsApp number.');
       return;
     }
 
@@ -355,13 +390,21 @@ export function App() {
 
     const cleanHostPhone = hostPhone.replace(/\D/g, '').slice(-10);
 
-    const title = listingTab === 'fresh'
+    const title = listingTab === 'seeker'
+      ? (spaceTitle.trim() || `Looking for ${seekerLookingFor} in ${spaceLocation}`)
+      : listingTab === 'fresh'
       ? (spaceTitle.trim() || `${freshBhk} in ${spaceLocation}`)
       : (spaceTitle.trim() || `${replacementSpots} in ${replacementBhk} (${replacementRoomType})`);
 
-    const occupancyText = listingTab === 'fresh'
+    const occupancyText = listingTab === 'seeker'
+      ? `${seekerOccupancy} • Move-in: ${seekerMoveIn}`
+      : listingTab === 'fresh'
       ? 'Entire Vacant Flat'
       : `${replacementSpots} needed`;
+
+    const furnishingText = listingTab === 'seeker'
+      ? `${seekerProfession} • ${seekerDiet}`
+      : spaceFurnishing;
 
     const cleanLoc = spaceLocation.toLowerCase().includes('ahmedabad')
       ? spaceLocation
@@ -373,21 +416,27 @@ export function App() {
 
     const newListing: SpaceListing = {
       id: `space-${Date.now()}`,
-      userId: currentUser.id,
+      userId: currentUser?.id || getOrCreateDeviceUserId(),
       category: listingTab,
       type: title,
-      rent: `₹${Number(spaceRent).toLocaleString()}`,
+      rent: listingTab === 'seeker' ? `Budget: ₹${Number(spaceRent).toLocaleString()}` : `₹${Number(spaceRent).toLocaleString()}`,
       rawRent: Number(spaceRent),
       location: cleanLoc,
-      furnishing: spaceFurnishing,
+      furnishing: furnishingText,
       occupancy: occupancyText,
       image: chosenImage,
-      hostName: hostName.trim() || currentUser.fullName || 'Host',
+      hostName: hostName.trim() || (listingTab === 'seeker' ? 'Seeker' : 'Host'),
       hostPhone: cleanHostPhone,
       status: 'active',
       verified: true,
-      description: spaceDescription.trim(),
+      description: spaceDescription.trim() || (
+        listingTab === 'seeker'
+          ? `I am looking for a space in ${cleanLoc}. Preferred: ${seekerLookingFor}. Budget: ₹${Number(spaceRent).toLocaleString()}/month. Target move-in: ${seekerMoveIn}. Lifestyle: ${seekerDiet}, ${seekerProfession}.`
+          : ''
+      ),
       amenities: selectedAmenities,
+      seekerMoveIn: seekerMoveIn,
+      seekerProfession: seekerProfession,
     };
 
     setSpaces([newListing, ...spaces]);
@@ -396,6 +445,13 @@ export function App() {
     }
     recordPostTimestamp();
     setCurrentHostPhone(cleanHostPhone);
+    localStorage.setItem('flatemate_user_name', hostName.trim());
+    localStorage.setItem('flatemate_user_phone', cleanHostPhone);
+    setCurrentUser(prev => ({
+      id: prev?.id || getOrCreateDeviceUserId(),
+      fullName: hostName.trim(),
+      phone: cleanHostPhone,
+    }));
     setUploadedPhotos([]);
     setSpaceDescription('');
     setListingSubmitted(true);
@@ -460,7 +516,7 @@ export function App() {
 
           <div className="flex items-center gap-2 sm:gap-3">
             {/* User Account Button */}
-            {currentUser ? (
+            {currentUser && (currentUser.fullName || currentUser.phone) ? (
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <button
                   type="button"
@@ -475,7 +531,7 @@ export function App() {
                 <button
                   type="button"
                   onClick={handleSignOut}
-                  title="Sign Out"
+                  title="Sign Out / Clear Profile"
                   className="p-2 text-slate-400 hover:text-rose-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
                 >
                   <iconify-icon icon="lucide:log-out" class="text-base"></iconify-icon>
@@ -485,7 +541,7 @@ export function App() {
               <button
                 type="button"
                 onClick={() => {
-                  setAuthPromptMessage('Log in or sign up to manage your spaces and inquiries.');
+                  setAuthPromptMessage('Log in or sign up to manage your spaces and inquiries across devices.');
                   setIsAuthModalOpen(true);
                 }}
                 className="inline-flex items-center gap-1.5 min-h-10 px-3 sm:px-3.5 text-xs sm:text-sm font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl transition-colors cursor-pointer"
@@ -684,9 +740,10 @@ export function App() {
                   onChange={(e) => setSelectedCategoryTab(e.target.value as any)}
                   className="w-full bg-transparent text-slate-900 outline-hidden font-bold cursor-pointer"
                 >
-                  <option value="all">All Spaces (Both Types)</option>
+                  <option value="all">All Spaces (Flats & Seekers)</option>
                   <option value="fresh">Full Vacant Flats Only</option>
                   <option value="replacement">Flatmate Replacements Only</option>
+                  <option value="seeker">People Seeking Flats (Flat Wanted)</option>
                 </select>
               </label>
 
@@ -772,7 +829,7 @@ export function App() {
               </button>
             </div>
 
-            {/* CATEGORY SWITCHER TABS (Bifurcate: All / Full Vacant Flats / Flatmate Replacements) */}
+            {/* CATEGORY SWITCHER TABS (Bifurcate: All / Full Vacant Flats / Flatmate Replacements / People Seeking Flats) */}
             <div className="mt-6 flex flex-wrap gap-2 p-1.5 bg-slate-200/70 rounded-2xl max-w-fit">
               <button
                 type="button"
@@ -808,6 +865,18 @@ export function App() {
               >
                 <iconify-icon icon="lucide:users" class="text-sm"></iconify-icon>
                 <span>Flatmate Replacements</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedCategoryTab('seeker')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  selectedCategoryTab === 'seeker'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <iconify-icon icon="lucide:user-search" class="text-sm"></iconify-icon>
+                <span>People Seeking Flats</span>
               </button>
             </div>
 
@@ -871,31 +940,38 @@ export function App() {
             {/* Spaces Grid or Empty State */}
             {filteredSpaces.length === 0 ? (
               <div className="mt-8 rounded-2xl border-2 border-dashed border-slate-300 bg-white p-8 sm:p-12 text-center max-w-lg mx-auto shadow-xs">
-                <div className="w-14 h-14 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto mb-3">
-                  <iconify-icon icon="lucide:building-2" class="text-2xl"></iconify-icon>
+                <div className={`w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3 ${selectedCategoryTab === 'seeker' ? 'bg-emerald-100 text-emerald-600' : 'bg-primary/10 text-primary'}`}>
+                  <iconify-icon icon={selectedCategoryTab === 'seeker' ? "lucide:user-search" : "lucide:building-2"} class="text-2xl"></iconify-icon>
                 </div>
                 <h3 className="font-heading font-bold text-lg text-slate-900">
-                  {selectedCategoryTab === 'replacement' 
+                  {selectedCategoryTab === 'seeker'
+                    ? 'No Flat Seekers Listed Yet'
+                    : selectedCategoryTab === 'replacement' 
                     ? 'No Flatmate Replacements Listed Yet' 
                     : selectedCategoryTab === 'fresh'
                     ? 'No Full Vacant Flats Listed Yet'
                     : 'No Spaces Listed in This Selection'}
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-500 mt-1 mb-5 leading-relaxed">
-                  {selectedCategoryTab === 'replacement'
+                  {selectedCategoryTab === 'seeker'
+                    ? 'Looking for a room or flat in Ahmedabad? Post your requirement for free and let hosts connect with you!'
+                    : selectedCategoryTab === 'replacement'
                     ? 'Living in an apartment and need 1–2 flatmates to take over a room? Post your opening for free!'
                     : 'Have an available flat or room in Ahmedabad? Be the first to publish with zero brokerage.'}
                 </p>
                 <a
                   href="#list-space"
                   onClick={() => {
-                    if (selectedCategoryTab === 'replacement') setListingTab('replacement');
+                    if (selectedCategoryTab === 'seeker') setListingTab('seeker');
+                    else if (selectedCategoryTab === 'replacement') setListingTab('replacement');
                     else setListingTab('fresh');
                   }}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-white text-xs sm:text-sm font-bold shadow-sm hover:bg-primary/90 transition-colors"
+                  className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-xs sm:text-sm font-bold shadow-sm transition-colors ${
+                    selectedCategoryTab === 'seeker' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-primary hover:bg-primary/90'
+                  }`}
                 >
                   <iconify-icon icon="lucide:plus"></iconify-icon>
-                  <span>Post Your Space Free</span>
+                  <span>{selectedCategoryTab === 'seeker' ? 'Post Your Flat Requirement Free' : 'Post Your Space Free'}</span>
                 </a>
               </div>
             ) : (
@@ -904,7 +980,8 @@ export function App() {
                   const isSaved = savedSpaces.includes(item.id);
                   const isRented = item.status === 'rented';
                   const isReported = reportedSpaceIds.includes(item.id);
-                  const isReplacement = item.category === 'replacement' || item.type.toLowerCase().includes('shared');
+                  const isSeeker = item.category === 'seeker';
+                  const isReplacement = item.category === 'replacement' || (!item.category && item.type.toLowerCase().includes('shared'));
 
                   return (
                     <article key={item.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-all flex flex-col justify-between relative group">
@@ -918,6 +995,14 @@ export function App() {
                               width="1536" 
                               height="1024" 
                             />
+                          ) : isSeeker ? (
+                            <div className="aspect-16/10 w-full bg-linear-to-br from-emerald-50 to-teal-50 border-b border-emerald-100 flex flex-col items-center justify-center p-4 text-center select-none">
+                              <div className="w-12 h-12 rounded-2xl bg-emerald-100 shadow-xs flex items-center justify-center text-emerald-700 mb-2">
+                                <iconify-icon icon="lucide:user-check" class="text-2xl text-emerald-600"></iconify-icon>
+                              </div>
+                              <span className="text-xs font-bold text-slate-800">Seeking Flat / Roommate</span>
+                              <span className="text-[11px] text-slate-500 font-medium mt-0.5">Looking to move in Ahmedabad</span>
+                            </div>
                           ) : (
                             <div className="aspect-16/10 w-full bg-slate-100 border-b border-slate-200 flex flex-col items-center justify-center p-4 text-center select-none">
                               <div className="w-12 h-12 rounded-2xl bg-white shadow-xs flex items-center justify-center text-slate-300 mb-2">
@@ -930,14 +1015,19 @@ export function App() {
                           {isRented && (
                             <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-2xs flex items-center justify-center">
                               <span className="bg-rose-600 text-white font-extrabold text-xs px-3 py-1 rounded-full uppercase tracking-wider">
-                                Taken / Rented Out
+                                {isSeeker ? 'Space Found' : 'Taken / Rented Out'}
                               </span>
                             </div>
                           )}
                           
-                          {/* Category Badge (Full Flat vs Replacement) */}
+                          {/* Category Badge (Full Flat vs Replacement vs Seeker) */}
                           <div className="absolute top-3 left-3 flex items-center gap-1.5">
-                            {isReplacement ? (
+                            {isSeeker ? (
+                              <span className="bg-emerald-700/90 text-white text-[10px] font-black px-2.5 py-1 rounded-full flex items-center gap-1 shadow-md backdrop-blur-xs">
+                                <iconify-icon icon="lucide:user-search" class="text-xs"></iconify-icon>
+                                <span>FLAT WANTED / SEEKER</span>
+                              </span>
+                            ) : isReplacement ? (
                               <span className="bg-purple-900/90 text-white text-[10px] font-black px-2.5 py-1 rounded-full flex items-center gap-1 shadow-md backdrop-blur-xs">
                                 <iconify-icon icon="lucide:users" class="text-xs"></iconify-icon>
                                 <span>ROOM REPLACEMENT</span>
@@ -961,8 +1051,8 @@ export function App() {
                         <div className="p-5">
                           <div className="flex items-start justify-between">
                             <div>
-                              <p className="text-xs font-semibold text-primary">
-                                {item.hostName ? `HOST: ${item.hostName}` : 'VERIFIED SPACE'}
+                              <p className={`text-xs font-semibold ${isSeeker ? 'text-emerald-700' : 'text-primary'}`}>
+                                {item.hostName ? `${isSeeker ? 'SEEKER' : 'HOST'}: ${item.hostName}` : (isSeeker ? 'VERIFIED SEEKER' : 'VERIFIED SPACE')}
                               </p>
                               <h3 className="mt-1 font-heading font-semibold text-slate-900 line-clamp-1">{item.type}</h3>
                             </div>
@@ -1005,12 +1095,12 @@ export function App() {
                           <p className="mt-3 text-lg font-bold text-slate-900">
                             {item.rent}
                             <span className="text-xs font-medium text-slate-500">
-                              {isReplacement ? ' / person / mo' : ' / month'}
+                              {isSeeker ? ' max' : isReplacement ? ' / person / mo' : ' / month'}
                             </span>
                           </p>
                           
                           <p className="mt-1 text-xs sm:text-sm text-slate-600 flex items-center gap-1">
-                            <iconify-icon icon="lucide:map-pin" class="text-primary"></iconify-icon> {item.location}
+                            <iconify-icon icon="lucide:map-pin" class={isSeeker ? "text-emerald-600" : "text-primary"}></iconify-icon> {item.location}
                           </p>
 
                           <div className="mt-4 flex flex-wrap gap-1.5 text-xs">
@@ -1028,21 +1118,27 @@ export function App() {
                           >
                             View Details
                           </button>
-                          <button 
-                            type="button"
-                            onClick={() => {
-                              if (!currentUser) {
-                                setAuthPromptMessage('Please log in or create an account to express interest and connect with this host.');
-                                setOnAuthSuccessCallback(() => () => setInterestModalSpace(item));
-                                setIsAuthModalOpen(true);
-                              } else {
+                          {isSeeker ? (
+                            <a
+                              href={`https://wa.me/91${(item.hostPhone || '').replace(/\D/g, '').slice(-10)}?text=${encodeURIComponent(`Hi ${item.hostName || ''}, I saw your post on Flatemate Ahmedabad seeking a flat/roommate (${item.type}). I have a space available that might match your requirement.`)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="w-full min-h-11 rounded-xl bg-emerald-600 text-xs sm:text-sm font-bold text-white flex items-center justify-center gap-1.5 hover:bg-emerald-700 transition-colors shadow-sm"
+                            >
+                              <iconify-icon icon="logos:whatsapp-icon" class="text-base"></iconify-icon>
+                              <span>Chat WhatsApp</span>
+                            </a>
+                          ) : (
+                            <button 
+                              type="button"
+                              onClick={() => {
                                 setInterestModalSpace(item);
-                              }
-                            }}
-                            className="w-full min-h-11 rounded-xl bg-primary text-xs sm:text-sm font-bold text-white flex items-center justify-center hover:bg-primary/90 transition-colors cursor-pointer shadow-sm"
-                          >
-                            Interested
-                          </button>
+                              }}
+                              className="w-full min-h-11 rounded-xl bg-primary text-xs sm:text-sm font-bold text-white flex items-center justify-center hover:bg-primary/90 transition-colors cursor-pointer shadow-sm"
+                            >
+                              Interested
+                            </button>
+                          )}
                         </div>
                       </div>
                     </article>
@@ -1128,7 +1224,7 @@ export function App() {
                   </label>
                   
                   {/* Category Switcher Tabs */}
-                  <div className="grid grid-cols-2 lg:grid-cols-1 gap-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-2.5">
                     {/* TAB 1: FRESH FLAT */}
                     <button
                       type="button"
@@ -1186,6 +1282,35 @@ export function App() {
                         </div>
                       </div>
                     </button>
+
+                    {/* TAB 3: SEEKING FLAT / ROOMMATE */}
+                    <button
+                      type="button"
+                      onClick={() => setListingTab('seeker')}
+                      className={`text-left p-3.5 sm:p-4 rounded-xl border-2 transition-all cursor-pointer relative ${
+                        listingTab === 'seeker'
+                          ? 'bg-white border-emerald-600 shadow-md ring-2 ring-emerald-500/20'
+                          : 'bg-white/70 border-slate-200 hover:border-slate-300 hover:bg-white'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+                          listingTab === 'seeker' 
+                            ? 'bg-emerald-600 text-white shadow-xs' 
+                            : 'bg-slate-100 text-slate-600'
+                        }`}>
+                          <iconify-icon icon="lucide:user-search" class="text-lg"></iconify-icon>
+                        </span>
+                        <div>
+                          <h4 className="font-heading font-bold text-xs sm:text-sm text-slate-900">
+                            3. Looking for Flat
+                          </h4>
+                          <p className="text-[10px] sm:text-xs text-slate-500">
+                            Post seeker requirement
+                          </p>
+                        </div>
+                      </div>
+                    </button>
                   </div>
                 </div>
 
@@ -1214,15 +1339,25 @@ export function App() {
                 {/* Form Category Banner */}
                 <div className="flex items-center justify-between pb-3.5 mb-4 border-b border-slate-100">
                   <div className="flex items-center gap-2">
-                    <span className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                      <iconify-icon icon={listingTab === 'fresh' ? "lucide:building-2" : "lucide:users"} class="text-base"></iconify-icon>
+                    <span className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                      listingTab === 'seeker' ? 'bg-emerald-100 text-emerald-700' : 'bg-primary/10 text-primary'
+                    }`}>
+                      <iconify-icon icon={listingTab === 'seeker' ? "lucide:user-search" : listingTab === 'fresh' ? "lucide:building-2" : "lucide:users"} class="text-base"></iconify-icon>
                     </span>
                     <div>
                       <h3 className="font-heading text-sm sm:text-base font-bold text-slate-900">
-                        {listingTab === 'fresh' ? 'Full Flat Details' : 'Flatmate Replacement Details'}
+                        {listingTab === 'seeker' 
+                          ? 'Flat / Roommate Seeker Requirement' 
+                          : listingTab === 'fresh' 
+                          ? 'Full Flat Details' 
+                          : 'Flatmate Replacement Details'}
                       </h3>
                       <p className="text-[11px] text-slate-500">
-                        {listingTab === 'fresh' ? 'Fill out your property details below' : 'Specify room & roommate details below'}
+                        {listingTab === 'seeker'
+                          ? 'Tell hosts what kind of room or flat you are looking for in Ahmedabad'
+                          : listingTab === 'fresh' 
+                          ? 'Fill out your property details below' 
+                          : 'Specify room & roommate details below'}
                       </p>
                     </div>
                   </div>
@@ -1236,9 +1371,13 @@ export function App() {
                     <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
                       <iconify-icon icon="lucide:circle-check" class="text-3xl"></iconify-icon>
                     </div>
-                    <h4 className="font-bold text-lg text-slate-900">Your Listing is Live!</h4>
+                    <h4 className="font-bold text-lg text-slate-900">
+                      {listingTab === 'seeker' ? 'Your Requirement is Live!' : 'Your Listing is Live!'}
+                    </h4>
                     <p className="text-xs text-slate-600 max-w-xs mx-auto">
-                      Your space is now visible in the live Ahmedabad feed. Check your Host Portal for inquiries!
+                      {listingTab === 'seeker'
+                        ? 'Your requirement is now visible to hosts and roommates across Ahmedabad. Check your portal or WhatsApp for inquiries!'
+                        : 'Your space is now visible in the live Ahmedabad feed. Check your Host Portal for inquiries!'}
                     </p>
                     <div className="flex flex-col sm:flex-row justify-center gap-2 pt-2">
                       <button 
@@ -1554,14 +1693,201 @@ export function App() {
                           </div>
                         </div>
                       )}
+
+                      {/* SEEKER FIELDS (Looking for flat / flatmate) */}
+                      {listingTab === 'seeker' && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                          <div>
+                            <label className="mb-1 block text-xs font-bold text-slate-800">What are you looking for? *</label>
+                            <input 
+                              type="text"
+                              required
+                              value={seekerLookingFor}
+                              onChange={(e) => setSeekerLookingFor(e.target.value)}
+                              placeholder="e.g. Private Room in Shared 2BHK/3BHK"
+                              className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20 outline-hidden transition-all"
+                            />
+                            <div className="flex flex-wrap gap-1.5 mt-1.5">
+                              {['Private Room in Shared Flat', '1BHK / Studio Flat', 'Shared Room / Bed Space', '2BHK Flat'].map((sugg) => (
+                                <button
+                                  type="button"
+                                  key={sugg}
+                                  onClick={() => setSeekerLookingFor(sugg)}
+                                  className={`text-[11px] px-2 py-0.5 rounded-md border transition-all cursor-pointer ${
+                                    seekerLookingFor === sugg 
+                                      ? 'bg-emerald-600 text-white border-emerald-600 font-bold shadow-2xs' 
+                                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                                  }`}
+                                >
+                                  {sugg}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="mb-1 block text-xs font-bold text-slate-800">Max Monthly Budget (₹) *</label>
+                            <input 
+                              type="number"
+                              required
+                              value={spaceRent}
+                              onChange={(e) => setSpaceRent(e.target.value)}
+                              placeholder="e.g. 8000"
+                              className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20 outline-hidden transition-all"
+                            />
+                            <div className="flex flex-wrap gap-1.5 mt-1.5">
+                              {['6000', '8000', '10000', '12000', '15000'].map((sugg) => (
+                                <button
+                                  type="button"
+                                  key={sugg}
+                                  onClick={() => setSpaceRent(sugg)}
+                                  className={`text-[11px] px-2 py-0.5 rounded-md border transition-all cursor-pointer ${
+                                    spaceRent === sugg 
+                                      ? 'bg-emerald-600 text-white border-emerald-600 font-bold shadow-2xs' 
+                                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                                  }`}
+                                >
+                                  ₹{sugg}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="mb-1 block text-xs font-bold text-slate-800">Preferred Locations in Ahmedabad *</label>
+                            <input 
+                              type="text"
+                              required
+                              value={spaceLocation}
+                              onChange={(e) => setSpaceLocation(e.target.value)}
+                              placeholder="e.g. Satellite / Vastrapur / Bodakdev"
+                              className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20 outline-hidden transition-all"
+                            />
+                            <div className="flex flex-wrap gap-1.5 mt-1.5">
+                              {['Satellite', 'Vastrapur', 'Prahlad Nagar', 'Bodakdev', 'SG Highway', 'Navrangpura'].map((sugg) => (
+                                <button
+                                  type="button"
+                                  key={sugg}
+                                  onClick={() => setSpaceLocation(prev => prev ? `${prev}, ${sugg}` : sugg)}
+                                  className="text-[11px] px-2 py-0.5 rounded-md border bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 transition-all cursor-pointer"
+                                >
+                                  +{sugg}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="mb-1 block text-xs font-bold text-slate-800">Target Move-in Date *</label>
+                            <input 
+                              type="text"
+                              required
+                              value={seekerMoveIn}
+                              onChange={(e) => setSeekerMoveIn(e.target.value)}
+                              placeholder="e.g. Immediate / Within 15 Days"
+                              className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20 outline-hidden transition-all"
+                            />
+                            <div className="flex flex-wrap gap-1.5 mt-1.5">
+                              {['Immediate', 'Within 7 Days', 'Within 15 Days', 'Next Month'].map((sugg) => (
+                                <button
+                                  type="button"
+                                  key={sugg}
+                                  onClick={() => setSeekerMoveIn(sugg)}
+                                  className={`text-[11px] px-2 py-0.5 rounded-md border transition-all cursor-pointer ${
+                                    seekerMoveIn === sugg 
+                                      ? 'bg-emerald-600 text-white border-emerald-600 font-bold shadow-2xs' 
+                                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                                  }`}
+                                >
+                                  {sugg}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="mb-1 block text-xs font-bold text-slate-800">Who are you? (Occupancy) *</label>
+                            <input 
+                              type="text"
+                              required
+                              value={seekerOccupancy}
+                              onChange={(e) => setSeekerOccupancy(e.target.value)}
+                              placeholder="e.g. 1 Male Bachelor / 1 Female / Working Couple"
+                              className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20 outline-hidden transition-all"
+                            />
+                            <div className="flex flex-wrap gap-1.5 mt-1.5">
+                              {['1 Male Bachelor', '1 Female Bachelor', '2 Friends', 'Working Couple'].map((sugg) => (
+                                <button
+                                  type="button"
+                                  key={sugg}
+                                  onClick={() => setSeekerOccupancy(sugg)}
+                                  className={`text-[11px] px-2 py-0.5 rounded-md border transition-all cursor-pointer ${
+                                    seekerOccupancy === sugg 
+                                      ? 'bg-emerald-600 text-white border-emerald-600 font-bold shadow-2xs' 
+                                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                                  }`}
+                                >
+                                  {sugg}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="mb-1 block text-xs font-bold text-slate-800">Profession & Food Preference</label>
+                            <div className="grid grid-cols-2 gap-2">
+                              <input 
+                                type="text"
+                                value={seekerProfession}
+                                onChange={(e) => setSeekerProfession(e.target.value)}
+                                placeholder="Profession (IT / Student)"
+                                className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:border-emerald-600 outline-hidden"
+                              />
+                              <input 
+                                type="text"
+                                value={seekerDiet}
+                                onChange={(e) => setSeekerDiet(e.target.value)}
+                                placeholder="Diet (Veg / Non-veg)"
+                                className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:border-emerald-600 outline-hidden"
+                              />
+                            </div>
+                            <div className="flex flex-wrap gap-1.5 mt-1.5">
+                              {['Vegetarian', 'Eggetarian', 'Non-Veg Friendly', 'IT Professional', 'Student'].map((sugg) => (
+                                <button
+                                  type="button"
+                                  key={sugg}
+                                  onClick={() => {
+                                    if (sugg.includes('arian') || sugg.includes('Veg')) setSeekerDiet(sugg);
+                                    else setSeekerProfession(sugg);
+                                  }}
+                                  className="text-[11px] px-2 py-0.5 rounded-md border bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 cursor-pointer"
+                                >
+                                  {sugg}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="sm:col-span-2">
+                            <label className="mb-1 block text-xs font-bold text-slate-800">Headline / Short Note (Optional)</label>
+                            <input 
+                              type="text"
+                              value={spaceTitle}
+                              onChange={(e) => setSpaceTitle(e.target.value)}
+                              placeholder="e.g. IT Engineer looking for a peaceful room with attached bath in Satellite"
+                              className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20 outline-hidden transition-all"
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
 
-                    {/* SECTION 2: HOST CONTACT DETAILS */}
+                    {/* SECTION 2: CONTACT DETAILS */}
                     <div className="pt-4 border-t border-slate-100">
                       <div className="text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-3 flex items-center justify-between">
                         <div className="flex items-center gap-1.5">
                           <iconify-icon icon="lucide:user" class="text-primary"></iconify-icon>
-                          <span>Step 2: Host Contact Information</span>
+                          <span>{listingTab === 'seeker' ? 'Step 2: Your Contact Information (For Hosts to Reach You)' : 'Step 2: Host Contact Information'}</span>
                         </div>
                         {currentUser && (
                           <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
@@ -1738,13 +2064,19 @@ export function App() {
                     <div className="pt-3">
                       <button 
                         type="submit" 
-                        className="min-h-12 sm:min-h-14 w-full rounded-xl bg-primary text-sm sm:text-base font-bold text-white shadow-md hover:bg-primary/90 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                        className={`min-h-12 sm:min-h-14 w-full rounded-xl text-sm sm:text-base font-bold text-white shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                          listingTab === 'seeker'
+                            ? 'bg-emerald-600 hover:bg-emerald-700'
+                            : 'bg-primary hover:bg-primary/90'
+                        }`}
                       >
-                        <iconify-icon icon={listingTab === 'fresh' ? "lucide:building-2" : "lucide:users"} class="text-lg"></iconify-icon>
+                        <iconify-icon icon={listingTab === 'seeker' ? "lucide:user-search" : listingTab === 'fresh' ? "lucide:building-2" : "lucide:users"} class="text-lg"></iconify-icon>
                         <span>
-                          {currentUser
-                            ? (listingTab === 'fresh' ? 'Publish Fresh Flat (100% Free)' : 'Publish Replacement Request (100% Free)')
-                            : 'Log In & Publish Listing (100% Free)'}
+                          {listingTab === 'seeker'
+                            ? 'Post My Requirement (100% Free)'
+                            : listingTab === 'fresh'
+                            ? 'Publish Fresh Flat (100% Free)'
+                            : 'Publish Replacement Request (100% Free)'}
                         </span>
                       </button>
                     </div>
@@ -2066,6 +2398,14 @@ export function App() {
             <div className="relative">
               {viewDetailsSpace.image && viewDetailsSpace.image.trim() !== '' && !viewDetailsSpace.image.includes('/assets/flat') ? (
                 <img src={viewDetailsSpace.image} alt={viewDetailsSpace.type} className="aspect-16/10 w-full object-cover" />
+              ) : viewDetailsSpace.category === 'seeker' ? (
+                <div className="aspect-16/10 w-full bg-linear-to-br from-emerald-50 to-teal-50 border-b border-emerald-100 flex flex-col items-center justify-center p-6 text-center select-none">
+                  <div className="w-14 h-14 rounded-2xl bg-emerald-100 shadow-xs flex items-center justify-center text-emerald-700 mb-2">
+                    <iconify-icon icon="lucide:user-check" class="text-3xl text-emerald-600"></iconify-icon>
+                  </div>
+                  <span className="text-sm font-bold text-slate-800">Flat Seeker Profile</span>
+                  <span className="text-xs text-slate-500 mt-0.5">Looking for flat / flatmate in Ahmedabad</span>
+                </div>
               ) : (
                 <div className="aspect-16/10 w-full bg-slate-100 border-b border-slate-200 flex flex-col items-center justify-center p-6 text-center select-none">
                   <div className="w-14 h-14 rounded-2xl bg-white shadow-xs flex items-center justify-center text-slate-300 mb-2">
@@ -2083,11 +2423,16 @@ export function App() {
               </button>
             </div>
             <div className="p-6">
-              <p className="text-xs font-semibold text-primary">
-                {viewDetailsSpace.hostName ? `HOST: ${viewDetailsSpace.hostName}` : 'VERIFIED LISTING'}
+              <p className={`text-xs font-semibold ${viewDetailsSpace.category === 'seeker' ? 'text-emerald-700' : 'text-primary'}`}>
+                {viewDetailsSpace.hostName ? `${viewDetailsSpace.category === 'seeker' ? 'SEEKER' : 'HOST'}: ${viewDetailsSpace.hostName}` : (viewDetailsSpace.category === 'seeker' ? 'VERIFIED SEEKER' : 'VERIFIED LISTING')}
               </p>
               <h3 className="mt-1 font-heading text-xl font-bold">{viewDetailsSpace.type}</h3>
-              <p className="mt-2 text-2xl font-black text-primary">{viewDetailsSpace.rent}<span className="text-sm font-normal text-muted-foreground">/month</span></p>
+              <p className="mt-2 text-2xl font-black text-primary">
+                {viewDetailsSpace.rent}
+                <span className="text-sm font-normal text-muted-foreground">
+                  {viewDetailsSpace.category === 'seeker' ? ' max' : '/month'}
+                </span>
+              </p>
               <p className="mt-1 text-sm text-muted-foreground flex items-center gap-1">
                 <iconify-icon icon="lucide:map-pin"></iconify-icon> {viewDetailsSpace.location}
               </p>
@@ -2124,23 +2469,29 @@ export function App() {
                 >
                   Close
                 </button>
-                <button 
-                  type="button"
-                  onClick={() => {
-                    const space = viewDetailsSpace;
-                    setViewDetailsSpace(null);
-                    if (!currentUser) {
-                      setAuthPromptMessage('Please log in or sign up to express interest and connect with this host.');
-                      setOnAuthSuccessCallback(() => () => setInterestModalSpace(space));
-                      setIsAuthModalOpen(true);
-                    } else {
+                {viewDetailsSpace.category === 'seeker' ? (
+                  <a 
+                    href={`https://wa.me/91${(viewDetailsSpace.hostPhone || '').replace(/\D/g, '').slice(-10)}?text=${encodeURIComponent(`Hi ${viewDetailsSpace.hostName || ''}, I saw your post on Flatemate Ahmedabad seeking a flat/roommate (${viewDetailsSpace.type}). I have a space available that might match your requirement.`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 py-3 bg-emerald-600 text-white rounded-lg text-sm font-bold flex items-center justify-center gap-2 hover:bg-emerald-700 transition-colors shadow-sm"
+                  >
+                    <iconify-icon icon="logos:whatsapp-icon" class="text-lg"></iconify-icon>
+                    <span>Connect on WhatsApp</span>
+                  </a>
+                ) : (
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      const space = viewDetailsSpace;
+                      setViewDetailsSpace(null);
                       setInterestModalSpace(space);
-                    }
-                  }}
-                  className="flex-1 py-3 bg-primary text-primary-foreground rounded-lg text-sm font-bold flex items-center justify-center hover:bg-primary/90 transition-colors cursor-pointer"
-                >
-                  Express Interest
-                </button>
+                    }}
+                    className="flex-1 py-3 bg-primary text-primary-foreground rounded-lg text-sm font-bold flex items-center justify-center hover:bg-primary/90 transition-colors cursor-pointer"
+                  >
+                    Express Interest
+                  </button>
+                )}
               </div>
             </div>
           </div>

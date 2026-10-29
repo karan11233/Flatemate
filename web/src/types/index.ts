@@ -3,7 +3,7 @@ export type ListingType = 'flat' | 'roommate';
 export interface SpaceListing {
   id: string;
   userId?: string;
-  category?: 'fresh' | 'replacement';
+  category?: 'fresh' | 'replacement' | 'seeker';
   type: string;
   rent: string;
   location: string;
@@ -18,6 +18,8 @@ export interface SpaceListing {
   reportCount?: number;
   description?: string;
   amenities?: string[];
+  seekerMoveIn?: string;
+  seekerProfession?: string;
 }
 
 export interface AuthUser {

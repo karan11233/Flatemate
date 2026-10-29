@@ -182,7 +182,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </div>
           )}
 
-          {mode === 'signup' && (
+          {mode === 'signup' ? (
             <>
               <div>
                 <label className="block text-xs font-bold text-slate-800 mb-1">
@@ -213,24 +213,24 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     className="w-full pl-11 pr-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-hidden"
                   />
                 </div>
-                <p className="text-[10px] text-slate-500 mt-1">Used to alert you on WhatsApp when seekers express interest.</p>
+                <p className="text-[10px] text-slate-500 mt-1">Used to alert you on WhatsApp and sync your listings.</p>
               </div>
             </>
+          ) : (
+            <div>
+              <label className="block text-xs font-bold text-slate-800 mb-1">
+                WhatsApp Mobile Number or Email *
+              </label>
+              <input
+                type="text"
+                required
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                placeholder="e.g. 9876543210 or your email"
+                className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-hidden"
+              />
+            </div>
           )}
-
-          <div>
-            <label className="block text-xs font-bold text-slate-800 mb-1">
-              {mode === 'signup' ? 'Email Address (or Mobile Number)' : 'Email or Mobile Number *'}
-            </label>
-            <input
-              type="text"
-              required={mode === 'login'}
-              value={identifier}
-              onChange={(e) => setIdentifier(e.target.value)}
-              placeholder={mode === 'signup' ? 'name@gmail.com (Optional if using mobile)' : 'e.g. name@gmail.com or 9876543210'}
-              className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-hidden"
-            />
-          </div>
 
           <div>
             <div className="flex items-center justify-between mb-1">
