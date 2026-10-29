@@ -2422,10 +2422,52 @@ export function App() {
 
         </div>
 
+        {/* Ahmedabad Local SEO Neighborhoods Directory */}
+        <div className="border-t border-border bg-slate-50/70 py-6 px-6 lg:px-10">
+          <div className="mx-auto max-w-7xl">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2.5">
+              Popular Ahmedabad Locations for Flats & Flatmates (0% Brokerage):
+            </h4>
+            <div className="flex flex-wrap gap-2 text-xs">
+              {[
+                'Satellite',
+                'Vastrapur',
+                'Prahlad Nagar',
+                'Bodakdev',
+                'Thaltej',
+                'SG Highway',
+                'Bopal',
+                'South Bopal',
+                'Navrangpura',
+                'Shela',
+                'Makarba',
+                'Ambawadi',
+                'Gota',
+                'Chandkheda',
+                'Motera',
+                'Near IIM Ahmedabad',
+                'Near Nirma University',
+              ].map((locality) => (
+                <a
+                  key={locality}
+                  href="#spaces"
+                  onClick={() => {
+                    const clean = locality.replace('Near ', '').split(' ')[0];
+                    setSelectedLocality(clean);
+                  }}
+                  className="rounded-lg bg-white border border-slate-200 px-2.5 py-1 text-slate-600 hover:text-primary hover:border-primary transition-all font-medium"
+                >
+                  Flats in {locality}
+                </a>
+              ))}
+            </div>
+          </div>
+        </div>
+
         <div className="border-t border-border">
           <div className="mx-auto flex w-full max-w-7xl flex-col gap-2 px-6 py-5 text-xs text-muted-foreground sm:flex-row sm:justify-between lg:px-10">
-            <span>© 2026 Flatemate. All rights reserved.</span>
-            <span>Built for Ahmedabad shared living.</span>
+            <span>© 2026 Flatemate. All rights reserved. Zero Brokerage Ahmedabad.</span>
+            <span>Built for Ahmedabad shared living & roommate discovery.</span>
           </div>
         </div>
       </footer>
