@@ -499,11 +499,13 @@ export function App() {
       {/* HEADER */}
       <header className="sticky top-0 z-30 border-b border-border bg-background">
         <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 sm:px-6 py-3.5 lg:px-10">
-          <a className="flex items-center gap-2 font-heading text-xl font-bold" href="#home">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-xs">
-              <iconify-icon icon="lucide:house" class="text-lg"></iconify-icon>
-            </span>
-            Flatemate
+          <a className="flex items-center gap-2.5 font-heading text-xl font-bold tracking-tight text-slate-900 group" href="#home">
+            <img 
+              src="/assets/flatemate-logo-alt.jpg" 
+              alt="Flatemate Logo" 
+              className="w-9 h-9 rounded-xl object-cover shadow-xs border border-primary/20 group-hover:scale-105 transition-transform" 
+            />
+            <span>Flatemate</span>
           </a>
 
           <nav className="hidden items-center gap-7 text-sm font-medium text-muted-foreground lg:flex">
@@ -2377,11 +2379,13 @@ export function App() {
         <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-10 px-6 py-12 sm:grid-cols-2 lg:grid-cols-5 lg:px-10">
           
           <div className="lg:col-span-2">
-            <div className="flex items-center gap-2 font-heading text-xl font-bold">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-                <iconify-icon icon="lucide:house" class="text-lg"></iconify-icon>
-              </span>
-              Flatemate
+            <div className="flex items-center gap-2.5 font-heading text-xl font-bold tracking-tight">
+              <img 
+                src="/assets/flatemate-logo-alt.jpg" 
+                alt="Flatemate Logo" 
+                className="w-9 h-9 rounded-xl object-cover shadow-xs border border-primary/20" 
+              />
+              <span>Flatemate</span>
             </div>
             <p className="mt-4 max-w-xs text-sm leading-6 text-muted-foreground">
               Find your space. Find your people.
